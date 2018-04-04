@@ -8,6 +8,9 @@ import logger
 
 
 class agent(object):
+    # log_episodic_returns = []
+    log_percentage_of_action = []
+    log_average_reward = []
 
     def act(self, observation):
         pass
@@ -41,6 +44,11 @@ class agent(object):
         for i_step in range(1, len(reward_list)):
             returns.append(reward_list[-i_step - 1] + returns[-1])
         return returns[::-1]
+
+    def save_npy(self, current_time, name):
+        np.save('./data/' + str(current_time) + '-' + name + '.npy',
+                {'action': self.log_percentage_of_action,
+                 'reward': self.log_average_reward})
 
 
 class selfish_agent(agent):
@@ -105,17 +113,16 @@ class selfish_agent(agent):
             self._advantages: advantages
         }
         self.session.run(self._train, feed_dict=batch_feed)
-        # logging the reward function
-        # import pdb; pdb.set_trace()
+        self.log_average_reward.append(np.mean(self.episodic_returns))
+        self.log_percentage_of_action.append(np.sum(acts) / np.float(acts.size))
+
         logger.info(
             'Agent {} have reward: {}'.format(
-                self._name_scope, np.mean(self.episodic_returns)
+                self._name_scope, self.log_average_reward[-1]
             )
         )
         logger.info(
-            'Percentage of DEFECT: {}'.format(
-                np.sum(acts) / np.float(acts.size)
-            )
+            'Percentage of DEFECT: {}'.format(self.log_percentage_of_action[-1])
         )
 
         self.reset_episode_info()

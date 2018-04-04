@@ -5,6 +5,7 @@ from config import get_config
 import agent
 from env import prison_env
 import logger
+import time
 
 
 def policy_rollout(env, agent_one, agent_two):
@@ -41,12 +42,10 @@ def main():
     args.num_actions = 2
 
     session = tf.Session()
-    selfish_agent = agent.selfish_agent(args, session,
-                                        name_scope='selfish_agent')
-    naive_agent = agent.selfish_agent(args, session,
-                                      name_scope='naive_agent')
+    agent_one = agent.selfish_agent(args, session, name_scope='selfish_agent')
+    agent_two = agent.selfish_agent(args, session, name_scope='naive_agent')
 
-    session.run(tf.initialize_all_variables())
+    session.run(tf.global_variables_initializer())
 
     for i_iteration in range(args.num_iteration):
 
@@ -54,10 +53,14 @@ def main():
 
         for _ in range(args.episode_per_batch):
 
-            policy_rollout(env, selfish_agent, naive_agent)
+            policy_rollout(env, agent_one, agent_two)
 
-        selfish_agent.train_step()
-        naive_agent.train_step()
+        agent_one.train_step()
+        agent_two.train_step()
+
+    current_time = time.time()
+    agent_one.save_npy(current_time, agent_one._name_scope)
+    agent_two.save_npy(current_time, agent_two._name_scope)
 
 
 if __name__ == "__main__":
