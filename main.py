@@ -15,10 +15,15 @@ def policy_rollout(env, agent_one, agent_two):
     player_info = env.reset()
     agent_one_infolist, agent_two_infolist = [], []
     done = player_info[0][2]
+    old_act_one = None
+    old_act_two = None
 
     while not done:
-        act_one = agent_one.act(player_info[0][0])
-        act_two = agent_two.act(player_info[1][0])
+        act_one = agent_one.act(player_info[0][0],
+                                [player_info[1][0], old_act_two])
+        act_two = agent_two.act(player_info[1][0],
+                                [player_info[0][0], old_act_one])
+        old_act_one, old_act_two = act_one, act_two
         done = player_info[0][2]
 
         agent_one_infolist.append(
@@ -50,6 +55,12 @@ def main():
         agent_two = agent.selfish_agent(args, session, name_scope='Selfish_B')
     elif args.exp_type == 'SP':
         agent_one = agent.punishment_agent(args, session, name_scope='Punish_A')
+        agent_two = agent.selfish_agent(args, session, name_scope='Selfish_B')
+    elif args.exp_type == 'AN':
+        agent_one = agent.adaptive_agent(args, session, name_scope='Adaptive_A')
+        agent_two = agent.naive_agent(args, session, name_scope='Naive_B')
+    elif args.exp_type == 'AS':
+        agent_one = agent.adaptive_agent(args, session, name_scope='Adaptive_A')
         agent_two = agent.selfish_agent(args, session, name_scope='Selfish_B')
 
     session.run(tf.global_variables_initializer())
