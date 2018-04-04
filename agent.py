@@ -4,8 +4,11 @@ import tensorflow as tf
 import numpy as np
 
 from env import COOP, DEFECT
+import logger
+
 
 class agent(object):
+
     def act(self, observation):
         pass
 
@@ -28,7 +31,7 @@ class agent(object):
             obs.append(np.array([i_data[0] for i_data in i_episode]))
             acts.append(np.array([i_data[3] for i_data in i_episode]))
 
-            self.episodic_returns.append(returns[0])
+            self.episodic_returns.append(returns[-1][0])
 
         return np.concatenate(obs), np.concatenate(acts), \
             np.concatenate(returns)
@@ -39,10 +42,8 @@ class agent(object):
             returns.append(reward_list[-i_step - 1] + returns[-1])
         return returns[::-1]
 
+
 class selfish_agent(agent):
-    '''
-        @brief: the selfish agent
-    '''
 
     def __init__(self, args, session, name_scope):
 
@@ -105,8 +106,17 @@ class selfish_agent(agent):
         }
         self.session.run(self._train, feed_dict=batch_feed)
         # logging the reward function
-        print(np.mean(self.episodic_returns))
-        print(acts)
+        # import pdb; pdb.set_trace()
+        logger.info(
+            'Agent {} have reward: {}'.format(
+                self._name_scope, np.mean(self.episodic_returns)
+            )
+        )
+        logger.info(
+            'Percentage of DEFECT: {}'.format(
+                np.sum(acts) / np.float(acts.size)
+            )
+        )
 
         self.reset_episode_info()
 
@@ -115,7 +125,6 @@ class selfish_agent(agent):
 
     def reset_episode_info(self):
         self.rollout_data = []
-
 
 
 class naive_agent(agent):

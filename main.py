@@ -21,8 +21,12 @@ def policy_rollout(env, agent_one, agent_two):
         act_two = agent_two.act(player_info[1][0])
         done = player_info[0][2]
 
-        agent_one_infolist.append(player_info[0] + [act_one])
-        agent_two_infolist.append(player_info[1] + [act_two])
+        agent_one_infolist.append(
+            player_info[0] + [act_one] + player_info[1] + [act_two]
+        )
+        agent_two_infolist.append(
+            player_info[1] + [act_two] + player_info[0] + [act_one]
+        )
         player_info = env.step(act_one, act_two)
 
     agent_one.record_episode_info(agent_one_infolist)
@@ -40,7 +44,7 @@ def main():
     selfish_agent = agent.selfish_agent(args, session,
                                         name_scope='selfish_agent')
     naive_agent = agent.selfish_agent(args, session,
-                                    name_scope='naive_agent')
+                                      name_scope='naive_agent')
 
     session.run(tf.initialize_all_variables())
 
@@ -54,6 +58,7 @@ def main():
 
         selfish_agent.train_step()
         naive_agent.train_step()
+
 
 if __name__ == "__main__":
     main()

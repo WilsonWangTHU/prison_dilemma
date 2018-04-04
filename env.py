@@ -12,6 +12,7 @@ class prison_env(object):
         self.history_length = args.history_length
         self.game_length = args.game_length
         assert self.history_length < self.game_length
+        # CC: -1, CD: -3, DC: 0, DD: -2
         self.reward_matrix = [[-1, -3], [0, -2]]
 
     def reset(self):
