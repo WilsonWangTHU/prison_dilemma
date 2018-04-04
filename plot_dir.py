@@ -7,6 +7,7 @@ import os
 import glob
 import pandas as pd
 import numpy as np
+import copy
 '''
 from matplotlib import rc
 sns.set(font_scale=1.2)
@@ -97,20 +98,32 @@ if __name__ == '__main__':
             data['Type'].extend([agent_name] * data_length)
             data['Unit'].extend([sliding_window] * data_length)
 
+    # Total reward
+    backup_data = copy.deepcopy(data)
+
     # plot the figures
-    figure_path = os.path.join('./', 'reward' + '.pdf')
-    ax = plt.figure()
-    data = pd.DataFrame(data)
-    sns.tsplot(data=data, time='Iteration', value='Reward', unit='Unit',
-               condition='Type', ci=100)
-    plt.autoscale()
-
-    plt.savefig(figure_path)
-
     figure_path = os.path.join('./', 'action' + '.pdf')
     ax = plt.figure()
     data = pd.DataFrame(data)
     sns.tsplot(data=data, time='Iteration', value='Action', unit='Unit',
+               condition='Type', ci=100)
+    plt.autoscale()
+
+    plt.savefig(figure_path)
+    figure_path = os.path.join('./', 'reward' + '.pdf')
+    ax = plt.figure()
+    del backup_data['Action']
+    num_data = len(backup_data['Reward']) / 2
+    backup_data['Type'].extend(['Total'] * num_data)
+    backup_data['Unit'].extend(backup_data['Unit'][:num_data])
+    backup_data['Iteration'].extend(backup_data['Iteration'][:num_data])
+    backup_data['Reward'].extend(
+        [backup_data['Reward'][i] + backup_data['Reward'][i + num_data]
+         for i in range(num_data)]
+    )
+
+    data = pd.DataFrame(backup_data)
+    sns.tsplot(data=data, time='Iteration', value='Reward', unit='Unit',
                condition='Type', ci=100)
     plt.autoscale()
 

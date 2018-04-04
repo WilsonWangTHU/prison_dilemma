@@ -17,6 +17,7 @@ def get_config():
 
     # TASK:
     parser.add_argument("--task", type=str, default=0)
+    parser.add_argument("--exp_type", type=str, default=0)
 
     args = parser.parse_args()
 

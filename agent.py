@@ -12,6 +12,7 @@ class agent(object):
     def __init__(self):
         self.log_percentage_of_action = []
         self.log_average_reward = []
+        self.rollout_data = []
 
     def act(self, observation):
         pass
@@ -19,11 +20,11 @@ class agent(object):
     def train_step(self, obs, acts, advantages):
         pass
 
-    def record_episode_info(self, observation):
-        pass
+    def record_episode_info(self, agent_infolist):
+        self.rollout_data.append(agent_infolist)
 
     def reset_episode_info(self):
-        pass
+        self.rollout_data = []
 
     def prepare_data(self, rollout_data):
         obs, returns, acts = [], [], []
@@ -60,7 +61,6 @@ class selfish_agent(agent):
         # initialization
         self.session = session
         self._name_scope = name_scope
-        self.rollout_data = []
 
         with tf.variable_scope(self._name_scope):
             # build the graph
@@ -129,12 +129,6 @@ class selfish_agent(agent):
 
         self.reset_episode_info()
 
-    def record_episode_info(self, agent_infolist):
-        self.rollout_data.append(agent_infolist)
-
-    def reset_episode_info(self):
-        self.rollout_data = []
-
 
 class naive_agent(agent):
     '''
@@ -146,12 +140,26 @@ class naive_agent(agent):
         # initialization
         agent.__init__(self)
         self.session = session
+        self._name_scope = name_scope
 
     def act(self, observation):
         return COOP  # always coop
 
-    def train_step(self, obs, acts, advantages):
-        pass
+    def train_step(self):
+        obs, acts, advantages = self.prepare_data(self.rollout_data)
+        self.log_average_reward.append(np.mean(self.episodic_returns))
+        self.log_percentage_of_action.append(np.sum(acts) / np.float(acts.size))
+
+        logger.info(
+            'Agent {} have reward: {}'.format(
+                self._name_scope, self.log_average_reward[-1]
+            )
+        )
+        logger.info(
+            'Percentage of DEFECT: {}'.format(self.log_percentage_of_action[-1])
+        )
+
+        self.reset_episode_info()
 
 
 class punishment_agent(agent):
@@ -164,6 +172,7 @@ class punishment_agent(agent):
         # initialization
         agent.__init__(self)
         self.session = session
+        self._name_scope = name_scope
 
     def act(self, observation):
         oppnent_strategy = len(observation) / 2
@@ -176,5 +185,18 @@ class punishment_agent(agent):
         else:
             return COOP
 
-    def train_step(self, obs, acts, advantages):
-        pass
+    def train_step(self):
+        obs, acts, advantages = self.prepare_data(self.rollout_data)
+        self.log_average_reward.append(np.mean(self.episodic_returns))
+        self.log_percentage_of_action.append(np.sum(acts) / np.float(acts.size))
+
+        logger.info(
+            'Agent {} have reward: {}'.format(
+                self._name_scope, self.log_average_reward[-1]
+            )
+        )
+        logger.info(
+            'Percentage of DEFECT: {}'.format(self.log_percentage_of_action[-1])
+        )
+
+        self.reset_episode_info()

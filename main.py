@@ -41,8 +41,16 @@ def main():
     args.num_actions = 2
 
     session = tf.Session()
-    agent_one = agent.selfish_agent(args, session, name_scope='Selfish_A')
-    agent_two = agent.selfish_agent(args, session, name_scope='Selfish_B')
+    # TYPE SS:
+    if args.exp_type == 'SS':
+        agent_one = agent.selfish_agent(args, session, name_scope='Selfish_A')
+        agent_two = agent.selfish_agent(args, session, name_scope='Selfish_B')
+    elif args.exp_type == 'SN':
+        agent_one = agent.naive_agent(args, session, name_scope='Naive_A')
+        agent_two = agent.selfish_agent(args, session, name_scope='Selfish_B')
+    elif args.exp_type == 'SP':
+        agent_one = agent.punishment_agent(args, session, name_scope='Punish_A')
+        agent_two = agent.selfish_agent(args, session, name_scope='Selfish_B')
 
     session.run(tf.global_variables_initializer())
 
