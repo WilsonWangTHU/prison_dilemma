@@ -8,9 +8,10 @@ import logger
 
 
 class agent(object):
-    # log_episodic_returns = []
-    log_percentage_of_action = []
-    log_average_reward = []
+
+    def __init__(self):
+        self.log_percentage_of_action = []
+        self.log_average_reward = []
 
     def act(self, observation):
         pass
@@ -45,8 +46,8 @@ class agent(object):
             returns.append(reward_list[-i_step - 1] + returns[-1])
         return returns[::-1]
 
-    def save_npy(self, current_time, name):
-        np.save('./data/' + str(current_time) + '-' + name + '.npy',
+    def save_npy(self, task, name):
+        np.save('./data/' + str(task) + '-' + name + '.npy',
                 {'action': self.log_percentage_of_action,
                  'reward': self.log_average_reward})
 
@@ -54,6 +55,7 @@ class agent(object):
 class selfish_agent(agent):
 
     def __init__(self, args, session, name_scope):
+        agent.__init__(self)
 
         # initialization
         self.session = session
@@ -142,6 +144,7 @@ class naive_agent(agent):
     def __init__(self, args, session, name_scope):
 
         # initialization
+        agent.__init__(self)
         self.session = session
 
     def act(self, observation):
@@ -159,6 +162,7 @@ class punishment_agent(agent):
     def __init__(self, args, session, name_scope):
 
         # initialization
+        agent.__init__(self)
         self.session = session
 
     def act(self, observation):

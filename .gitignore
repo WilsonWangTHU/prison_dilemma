@@ -1,4 +1,7 @@
 *.pyc
 *.swp
 *.swo
-./data/
+*.npy
+*.pdf
+./data
+./figure

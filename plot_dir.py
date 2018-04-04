@@ -85,7 +85,7 @@ if __name__ == '__main__':
             timesteps_per_batch *= \
                 float(data_length) / (data_length - args.average_across_timesteps)
 
-            data['Reward'].extend(reward_data)
+            data['Reward'].extend([i + agent_id for i in reward_data])
             data['Action'].extend(action_data)
             data['Iteration'].extend(
                 timesteps_per_batch * (
@@ -95,16 +95,23 @@ if __name__ == '__main__':
             )
             # the name of the model
             data['Type'].extend([agent_name] * data_length)
-            data['Unit'].extend([sliding_window + agent_id * 100 + 1] * data_length)
+            data['Unit'].extend([sliding_window] * data_length)
 
     # plot the figures
-    figure_path = os.path.join('./', 'avg_reward' + '.pdf')
+    figure_path = os.path.join('./', 'reward' + '.pdf')
     ax = plt.figure()
     data = pd.DataFrame(data)
-    import pdb; pdb.set_trace()
     sns.tsplot(data=data, time='Iteration', value='Reward', unit='Unit',
                condition='Type', ci=100)
-    plt.title(args.name)
+    plt.autoscale()
+
+    plt.savefig(figure_path)
+
+    figure_path = os.path.join('./', 'action' + '.pdf')
+    ax = plt.figure()
+    data = pd.DataFrame(data)
+    sns.tsplot(data=data, time='Iteration', value='Action', unit='Unit',
+               condition='Type', ci=100)
     plt.autoscale()
 
     plt.savefig(figure_path)
