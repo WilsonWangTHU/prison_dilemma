@@ -5,7 +5,7 @@ def get_config():
     # get the parameters
     parser = argparse.ArgumentParser(description='PrisonDilemma.')
 
-    parser.add_argument("--hidden_size", type=int, default=36)
+    parser.add_argument("--hidden_size", type=int, default=64)
     parser.add_argument("--learning_rate", type=float, default=0.0001)
 
     parser.add_argument("--num_iteration", type=int, default=1000)
@@ -18,6 +18,9 @@ def get_config():
     # TASK:
     parser.add_argument("--task", type=str, default=0)
     parser.add_argument("--exp_type", type=str, default=0)
+
+    # hunt environment
+    parser.add_argument("--size", type=int, default=5)
 
     args = parser.parse_args()
 

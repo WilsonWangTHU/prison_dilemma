@@ -86,7 +86,7 @@ if __name__ == '__main__':
             timesteps_per_batch *= \
                 float(data_length) / (data_length - args.average_across_timesteps)
 
-            data['Reward'].extend([i + agent_id for i in reward_data])
+            data['Reward'].extend([i for i in reward_data])
             data['Action'].extend(action_data)
             data['Iteration'].extend(
                 timesteps_per_batch * (

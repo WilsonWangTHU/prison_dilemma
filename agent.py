@@ -73,12 +73,17 @@ class selfish_agent(agent):
 
             hidden1 = tf.contrib.layers.fully_connected(
                 inputs=self._input, num_outputs=args.hidden_size,
-                activation_fn=tf.nn.relu,
+                activation_fn=tf.nn.tanh,
+                weights_initializer=tf.random_normal_initializer()
+            )
+            hidden2 = tf.contrib.layers.fully_connected(
+                inputs=hidden1, num_outputs=args.hidden_size,
+                activation_fn=tf.nn.tanh,
                 weights_initializer=tf.random_normal_initializer()
             )
 
             logits = tf.contrib.layers.fully_connected(
-                inputs=hidden1, num_outputs=args.num_actions,
+                inputs=hidden2, num_outputs=args.num_actions,
                 activation_fn=None
             )
 
@@ -87,6 +92,7 @@ class selfish_agent(agent):
 
             # get log probabilities
             log_prob = tf.log(tf.nn.softmax(logits))
+            self.log_prob = log_prob
 
             # training part of graph
             self._acts = tf.placeholder(tf.int32)
@@ -106,9 +112,11 @@ class selfish_agent(agent):
 
     def act(self, observation, old_info):
         # get one action by sampling
-        return self.session.run(
+        # import pdb; pdb.set_trace()
+        act = self.session.run(
             self._sample, feed_dict={self._input: [observation]}
         )  # 0 for coop, 1 for defect
+        return act
 
     def train_step(self):
         obs, acts, advantages = self.prepare_data(self.rollout_data)
@@ -126,9 +134,11 @@ class selfish_agent(agent):
                 self._name_scope, self.log_average_reward[-1]
             )
         )
+        '''
         logger.info(
             'Percentage of DEFECT: {}'.format(self.log_percentage_of_action[-1])
         )
+        '''
 
         self.reset_episode_info()
 
@@ -158,10 +168,11 @@ class naive_agent(agent):
                 self._name_scope, self.log_average_reward[-1]
             )
         )
+        '''
         logger.info(
             'Percentage of DEFECT: {}'.format(self.log_percentage_of_action[-1])
         )
-
+        '''
         self.reset_episode_info()
 
 
@@ -195,9 +206,11 @@ class punishment_agent(agent):
                 self._name_scope, self.log_average_reward[-1]
             )
         )
+        '''
         logger.info(
             'Percentage of DEFECT: {}'.format(self.log_percentage_of_action[-1])
         )
+        '''
 
         self.reset_episode_info()
 
@@ -210,6 +223,52 @@ class adaptive_agent(agent):
         # initialization
         self.session = session
         self._name_scope = name_scope
+        self.output_size = args.num_actions
+        self.unexpected = 0.0
+
+        with tf.variable_scope(self._name_scope + 'selfish'):
+            # build the graph
+            self.selfish_input = tf.placeholder(
+                tf.float32, shape=[None, args.input_size]
+            )
+
+            hidden1 = tf.contrib.layers.fully_connected(
+                inputs=self.selfish_input, num_outputs=args.hidden_size,
+                activation_fn=tf.nn.tanh,
+                weights_initializer=tf.random_normal_initializer()
+            )
+            hidden2 = tf.contrib.layers.fully_connected(
+                inputs=hidden1, num_outputs=args.hidden_size,
+                activation_fn=tf.nn.tanh,
+                weights_initializer=tf.random_normal_initializer()
+            )
+
+            logits = tf.contrib.layers.fully_connected(
+                inputs=hidden2, num_outputs=args.num_actions,
+                activation_fn=None
+            )
+
+            # op to sample an action
+            self.selfish_sample = tf.reshape(tf.multinomial(logits, 1), [])
+
+            # get log probabilities
+            log_prob = tf.log(tf.nn.softmax(logits))
+
+            # training part of graph
+            self.selfish_acts = tf.placeholder(tf.int32)
+            self.selfish_advantages = tf.placeholder(tf.float32)
+
+            # get log probs of actions from episode
+            indices = tf.range(0, tf.shape(log_prob)[0]) * \
+                tf.shape(log_prob)[1] + self.selfish_acts
+            act_prob = tf.gather(tf.reshape(log_prob, [-1]), indices)
+
+            # surrogate loss
+            loss = -tf.reduce_sum(act_prob * self.selfish_advantages)
+
+            # update
+            optimizer = tf.train.RMSPropOptimizer(args.learning_rate)
+            self.selfish_train = optimizer.minimize(loss)
 
         with tf.variable_scope(self._name_scope):
             # build the graph
@@ -218,12 +277,17 @@ class adaptive_agent(agent):
 
             hidden1 = tf.contrib.layers.fully_connected(
                 inputs=self._input, num_outputs=args.hidden_size,
-                activation_fn=tf.nn.relu,
+                activation_fn=tf.nn.tanh,
+                weights_initializer=tf.random_normal_initializer()
+            )
+            hidden2 = tf.contrib.layers.fully_connected(
+                inputs=hidden1, num_outputs=args.hidden_size,
+                activation_fn=tf.nn.tanh,
                 weights_initializer=tf.random_normal_initializer()
             )
 
             logits = tf.contrib.layers.fully_connected(
-                inputs=hidden1, num_outputs=args.num_actions,
+                inputs=hidden2, num_outputs=args.num_actions,
                 activation_fn=None
             )
 
@@ -259,9 +323,12 @@ class adaptive_agent(agent):
         )
         # return my_action
         if expected_opponent_act != old_info[1] and (old_info[1] is not None):
+            self.unexpected += 1
             # not expected!
-            # logger.error('Not Expected')
-            return 1 - my_action
+            return self.session.run(
+                self.selfish_sample,
+                feed_dict={self.selfish_input: [observation]}
+            )
         else:
             return my_action
 
@@ -284,8 +351,16 @@ class adaptive_agent(agent):
             self._advantages: total_advantages
         }
         self.session.run(self._train, feed_dict=batch_feed)
+        batch_feed = {
+            self.selfish_input: obs,
+            self.selfish_acts: acts,
+            self.selfish_advantages: advantages
+        }
+        self.session.run(self.selfish_train, feed_dict=batch_feed)
         self.log_average_reward.append(np.mean(self.episodic_returns))
-        self.log_percentage_of_action.append(np.sum(acts) / np.float(acts.size))
+        self.log_percentage_of_action.append(
+            self.unexpected / np.float(acts.size)
+        )
 
         logger.info(
             'Agent {} have reward: {}'.format(
@@ -299,4 +374,5 @@ class adaptive_agent(agent):
         logger.info(
             'Total reward: {}'.format(np.mean(self.total_episodic_returns))
         )
+        self.unexpected = 0.0
         self.reset_episode_info()

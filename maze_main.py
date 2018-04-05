@@ -3,7 +3,7 @@
 import tensorflow as tf
 from config import get_config
 import agent
-from env import prison_env
+from maze_env import maze_env
 import logger
 
 
@@ -12,6 +12,7 @@ def policy_rollout(env, agent_one, agent_two):
         @brief: run for one episode
     '''
 
+    # logger.warning('Reset!?')
     player_info = env.reset()
     agent_one_infolist, agent_two_infolist = [], []
     done = player_info[0][2]
@@ -41,9 +42,9 @@ def policy_rollout(env, agent_one, agent_two):
 def main():
     args = get_config()
 
-    env = prison_env(args)
-    args.input_size = 2 * args.history_length
-    args.num_actions = 2
+    env = maze_env(args)
+    args.input_size = 12
+    args.num_actions = 4
 
     session = tf.Session()
     # TYPE SS:
