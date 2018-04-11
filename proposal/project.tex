@@ -1,0 +1,111 @@
+\documentclass{article}
+\usepackage{nips_2017}
+\usepackage{algorithm}% http://ctan.org/pkg/algorithms
+\usepackage{algpseudocode}% http://ctan.org/pkg/algorithmicx
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+\usepackage{amsmath}      % microtypography
+
+\title{Computational Behaviors of Learning Agents in Social Dilemmas}
+
+\author{
+  Tingwu Wang\\
+  Department of Computer Science\\
+  University of Toronto\\
+  \texttt{tingwuwang@cs.toronto.edu} \\
+}
+
+\begin{document}
+\maketitle
+\begin{abstract}
+    Most Reinforcement Learning (RL) systems have a single-agent's view,
+    where the agent tries to optimize its' expected discounted reward.
+    Recently, cooperations of multi-agent in RL are considered, where every agent contributes to the shared objective function.
+    However in reality, agents might be selfish and might lie about their actual states to obtain improper advantages and jeopardize the total expected reward of all the agents.
+    Therefore the assumption of multi-agent's view, in which single agent could be potentially selfish, is essential in building a large hybrid or heterogeneous system.
+    In this paper, we focus on the strategy-proof mechanism design of RL environments.
+    By shaping the reward that each agent receives,
+    we try to build a system where agents are encouraged to perform unselfish policy while preserving the utility of the whole system.
+\end{abstract}
+
+\section{Introduction}
+Reinforcement Learning has been very successful for numerous single-agent tasks, which includes playing video games~\cite{mnih2015human},
+chess~\cite{silver2016mastering,silver2017mastering},
+as well as locomotion controls~\cite{gae,trpo,ppo}.
+Less attention has been paid to multi-agent systems until recently.
+Most multi-agent RL problems could be classified into two categories by their type of goals,
+which are namely shared-goal problems and independent-goal problems.
+In~\cite{tuyls2018symmetric,foerster2017learning,sukhbaatar2016learning},
+researchers study the multi-agent systems where an agent could optimize the shared reward of the community by communicating with other agents in the environment.
+One of the shared-goal problems' most major concern is the efficiency of communication.
+In independent-goal systems~\cite{lerer2017maintaining,leibo2017multi},
+the assumption is that other agents in the environment could either be cooperative, malicious or selfish,
+and the agent being trained will have to monitor the status of all other agents,
+and use different policies accordingly. 
+In~\cite{al2017continuous}, agents are put into a competitive environment, and agents compete against each other to gain better utility.
+
+Currently, most settings of the literatures of RL in multi-agent system are limited in that,
+either there is only forced cooperations,
+or the other agents' behaviors could be easily identified if they are not cooperating.
+We argue that however, in many real-world applications or scenarios where a collective decision is needed for agents,
+it is impossible or too costly to tell if one of the other agents is lying or not.
+More specifically, we are interested in a strategy-proof system,
+where all the reasonable agents, whether cooperative or selfish,
+will converge to the policy where the total utility of the system is maximized as well as possible.
+Inspired by algorithmic mechanism design~\cite{alon2010strategyproof,procaccia2009approximate}, we notice that it is possible to obtain truthfulness without resorting to payments,
+which suits the settings of multi-agent RL problems.
+
+We show (are going to show) that by combining approximate mechanism design and reward shaping~\cite{ng1999policy},
+we are able to design strategy-proof reward functions for RL agents.
+
+
+
+
+\section{Model and Algorithm}
+
+There are two modules in our model: the reward-assigner and the agents.
+The agents optimize its reward by interacting with the environment, namely the reward-assigner,
+while the reward-assigner is trying to increasing the total utility of the system by
+guiding the agents' behavior with a reward function.
+
+\subsection{Agents}
+In the environment, we have \(\mathcal{N}\) different agents,
+and at least \(N-1\) of them are trustful agents, while at most one of them is untrustworthy agent.
+The trustful agents report their true observed states,
+while the untrustworthy agent might lie about its observed state to gain advantages.
+
+For each of the agents, without loss of generality denoted as agent \(i\),
+we formulate it's optimization problem as an
+infinite-horizon discounted Markov decision process (MDP).
+To fully describe the MDP,
+we define the state space or observation space as \(\mathcal{S}\) and action space as \(\mathcal{A}\).
+To interact with the environments and reward-assigner,
+the agent generates its policy \(\pi_{\theta^i}(a^i_t| s^i_t)\) based on the current state \(s^i_t \in \mathcal{S}\),
+where \(a^i_t \in \mathcal{A}\) is the action and \(\theta^i\) are the parameters of the policy function for this agent.
+At each time step, all the agents report a state \(\psi^i_t = I_{\omega^i}(s^i_t)\) to the reward-assigner.
+For the trustful agents, we always have \(\psi^i_t = s^i_t\), while the untrustworthy agent might lies to fool other agents and reward-assigner.
+The reward-assigner, on the other hand,
+produces a reward \(r(\psi^i_t, a^i_t | \Psi^t)\) for the agent by looking at the collection of reported states from all agents, namely
+\begin{equation}
+\Psi^t = \left[\psi^1_t, \psi^2_t, \psi^3_t, ..., \psi^N_t\right].
+\end{equation}
+The agent's objective is to find a policy that maximizes the expected reward in equation~\ref{equation:expected}.
+\begin{equation}\label{equation:expected}
+\theta^i = \arg\max_{\theta^i} \mathbb{E}_{s^i\sim\rho_\theta}\left[r(\phi^i, \pi_{\theta^i}(s^i) | \Psi^t)\right],
+\end{equation}
+while the untrustworthy agent will try to maximize its reward by a slightly different objective function.
+\begin{equation}\label{equation:untrust_expected}
+\theta^i,\omega^i = \arg\max_{\theta^i,\omega^i}\mathbb{E}_{s^i\sim\rho_\theta}\left[r(\phi^i, \pi_{\theta^i}(s^i) | \Psi^t)\right], \mbox{ where }\,\psi^i_t = I_{\omega^i}(s^i_t)
+\end{equation}
+where \(\rho_\theta\) is the static state distribution of the agent \(i\)
+given the current policy parameters of all agents in the system.
+
+\bibliography{project}
+\bibliographystyle{plain}
+\end{document}

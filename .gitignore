@@ -5,3 +5,10 @@
 *.pdf
 ./data
 ./figure
+
+*.aux
+*.out
+*.bbl
+*.blg
+*.log
+*.pptx
