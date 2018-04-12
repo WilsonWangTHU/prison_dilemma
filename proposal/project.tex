@@ -12,6 +12,9 @@
 \usepackage{microtype}      % microtypography
 \usepackage{amsmath}      % microtypography
 
+\usepackage{amsmath}
+\usepackage{amssymb}
+
 \title{Computational Behaviors of Learning Agents in Social Dilemmas}
 
 \author{
@@ -24,14 +27,26 @@
 \begin{document}
 \maketitle
 \begin{abstract}
-    Most Reinforcement Learning (RL) systems have a single-agent's view,
-    where the agent tries to optimize its' expected discounted reward.
-    Recently, cooperations of multi-agent in RL are considered, where every agent contributes to the shared objective function.
-    However in reality, agents might be selfish and might lie about their actual states to obtain improper advantages and jeopardize the total expected reward of all the agents.
-    Therefore the assumption of multi-agent's view, in which single agent could be potentially selfish, is essential in building a large hybrid or heterogeneous system.
-    In this paper, we focus on the strategy-proof mechanism design of RL environments.
-    By shaping the reward that each agent receives,
-    we try to build a system where agents are encouraged to perform unselfish policy while preserving the utility of the whole system.
+Most Reinforcement Learning (RL) systems have a single-agent's view,
+where the agent tries to optimize its' expected discounted reward,
+    and the other agents in the environment is treated as part of the environment.
+However, multi-agent assumption is crucial for building artificial intelligence,
+since interactions, and more importantly,
+competitions between different agents are very common in real-world applications.
+Individuals have the temptation to increase payoffs, which at the same time
+might indanger the total welfare. %
+Recently cooperations in social dilemmas of multi-agent in RL are considered.
+Traditionally, the convergence and asymptotic behaviors of two players
+in a general sum games have been intensively studied.
+However, most of the studies have been focused on simple general sum matrix games,
+where the dynamics of the environment is known or very simple,
+and opponents' intrinsic goals are easy to infer from their behaviors.
+In reality, agents might take multiple timesteps before a reward signal is given
+in an environment with complex dynamics,
+and opponents' strategies are hard to interpret.
+In this paper, we empirically study the computational behaviors of agents during learning,
+and proposed Cooperative Mutual Assured Retaliation (CMAR) agents,
+which are able to maintain cooperation in certain complex social dilemmas.
 \end{abstract}
 
 \section{Introduction}
@@ -43,68 +58,144 @@ Most multi-agent RL problems could be classified into two categories by their ty
 which are namely shared-goal problems and independent-goal problems.
 In~\cite{tuyls2018symmetric,foerster2017learning,sukhbaatar2016learning},
 researchers study the multi-agent systems where an agent could optimize the shared reward of the community by communicating with other agents in the environment.
-One of the shared-goal problems' most major concern is the efficiency of communication.
+% One of the shared-goal problems' most major concern is the efficiency of communication.
 In independent-goal systems~\cite{lerer2017maintaining,leibo2017multi},
-the assumption is that other agents in the environment could either be cooperative, malicious or selfish,
-and the agent being trained will have to monitor the status of all other agents,
+the assumption is that other agents in the environment could either be cooperative,
+malicious or selfish.
+The agent being trained will have to monitor the status of all other agents,
 and use different policies accordingly. 
-In~\cite{al2017continuous}, agents are put into a competitive environment, and agents compete against each other to gain better utility.
+In~\cite{al2017continuous}, agents are put into a competitive environment,
+and agents compete against each other to gain better utility.
 
-Currently, most settings of the literatures of RL in multi-agent system are limited in that,
-either there is only forced cooperations,
-or the other agents' behaviors could be easily identified if they are not cooperating.
-We argue that however, in many real-world applications or scenarios where a collective decision is needed for agents,
-it is impossible or too costly to tell if one of the other agents is lying or not.
-More specifically, we are interested in a strategy-proof system,
-where all the reasonable agents, whether cooperative or selfish,
-will converge to the policy where the total utility of the system is maximized as well as possible.
-Inspired by algorithmic mechanism design~\cite{alon2010strategyproof,procaccia2009approximate}, we notice that it is possible to obtain truthfulness without resorting to payments,
-which suits the settings of multi-agent RL problems.
+Previously, people studying social dilemma have been focusing mostly on simple general sum matrix games~\cite{tullock1974social}.
+Among them, repeated general-sum matrix game with social dilemma is one of the most classic models~\cite{bouzy2010multi, leibo2017multi}.
+Typically, a common choice of policies for most agents is Nash equilibrium~\cite{maskin1999Nash, tullock1974social, bouzy2010multi},
+in which each player has no gain by changing only their own strategy.
 
-We show (are going to show) that by combining approximate mechanism design and reward shaping~\cite{ng1999policy},
-we are able to design strategy-proof reward functions for RL agents.
+However, previous works have not answered the following questions:
+First of all, tasks in real life are arbitary, which means that
+the dominant strategy or Nash equilibrium might not exist or hard to discover.
+There is also the difficulty of understanding opponent's intrinsic intention.
+In prisoner's dilemma~\cite{nowak1993strategy}, the defecting actions is self-explanatory.
+However in real life, agents need an inference module to model whether the opponent is defecting.
+In most literature, we assume that there is unlimited computation resource for every agent.
+But computationly, to train an agent,
+the limitation on both the model's capacity and computation power will inevitably affect agents' behaviors.
+And since the dynamics is unknown or hard to model,
+the policy has to be learnt from past experiences, which involves exploration.
+Opponent's policy distribution is unstatic,
+which affects and is affected by agent's current policy at the same time.
 
-
-
-
-\section{Model and Algorithm}
-
-There are two modules in our model: the reward-assigner and the agents.
-The agents optimize its reward by interacting with the environment, namely the reward-assigner,
-while the reward-assigner is trying to increasing the total utility of the system by
-guiding the agents' behavior with a reward function.
-
-\subsection{Agents}
-In the environment, we have \(\mathcal{N}\) different agents,
-and at least \(N-1\) of them are trustful agents, while at most one of them is untrustworthy agent.
-The trustful agents report their true observed states,
-while the untrustworthy agent might lie about its observed state to gain advantages.
-
-For each of the agents, without loss of generality denoted as agent \(i\),
-we formulate it's optimization problem as an
-infinite-horizon discounted Markov decision process (MDP).
-To fully describe the MDP,
-we define the state space or observation space as \(\mathcal{S}\) and action space as \(\mathcal{A}\).
-To interact with the environments and reward-assigner,
-the agent generates its policy \(\pi_{\theta^i}(a^i_t| s^i_t)\) based on the current state \(s^i_t \in \mathcal{S}\),
-where \(a^i_t \in \mathcal{A}\) is the action and \(\theta^i\) are the parameters of the policy function for this agent.
-At each time step, all the agents report a state \(\psi^i_t = I_{\omega^i}(s^i_t)\) to the reward-assigner.
-For the trustful agents, we always have \(\psi^i_t = s^i_t\), while the untrustworthy agent might lies to fool other agents and reward-assigner.
-The reward-assigner, on the other hand,
-produces a reward \(r(\psi^i_t, a^i_t | \Psi^t)\) for the agent by looking at the collection of reported states from all agents, namely
-\begin{equation}
-\Psi^t = \left[\psi^1_t, \psi^2_t, \psi^3_t, ..., \psi^N_t\right].
+The contributions of this paper is three-fold, 
+\begin{itemize}
+\item We provide emiprical analysis of computational behaviors of different agents.
+A mixture of trainable agents and agents of pre-defined strategy is tested on general social dilemmas.
+\item We provide benchmarking environments for complex social dilemmas.
+Multiple steps of wide range of choices of actions are needed before the reward is received.
+\item We design CMAR agents, which could maintain cooperation in complex social dilemmas.
+\end{itemize}
+% Currently, most settings of the literatures of RL in multi-agent system are limited in that,
+% either there is only forced cooperations,
+% or the other agents' behaviors could be easily identified if they are not cooperating.
+% We argue that however, in many real-world applications or scenarios where a collective decision is needed for agents,
+% it is impossible or too costly to tell if one of the other agents is lying or not.
+% More specifically, we are interested in a strategy-proof system,
+% where all the reasonable agents, whether cooperative or selfish,
+% will converge to the policy where the total utility of the system is maximized as well as possible.
+% Inspired by algorithmic mechanism design~\cite{alon2010strategyproof,procaccia2009approximate}, we notice that it is possible to obtain truthfulness without resorting to payments,
+% which suits the settings of multi-agent RL problems.
+% 
+% We show (are going to show) that by combining approximate mechanism design and reward shaping~\cite{ng1999policy},
+% we are able to design strategy-proof reward functions for RL agents.
+\section{Preliminary}
+\subsection{Reinforcement Learning}
+To optimize the policy for each agent, we implicit model other opponents and the environment
+and treat the problem for every agent as a separate Markov Decision Process.
+Starting from the current state, the agent chooses an action based on the observation.
+The environment receives the actions from all agents and a transition to the next state is made.
+This process is repeated until the episode ends.
+We define the MDP to be a tuple of
+\((\mathcal{S}, \mathcal{A}, \mathcal{P}, \mathcal{R})\),
+where \(\mathcal{S}\) denotes the state space of our problem,
+\(\mathcal{A}\) denotes the action space of the agents.
+\(\mathcal{P}\) denotes the transition probability distribution,
+which could be written as \(p(S', S, a)\).
+Distribution \(p(S', S, a) \rightarrow \mathbb{R}\) is not known by the agent in advance.
+Since multiple agents are in the environment, \(p(S', S, a)\) is dependent on other agents' policy.
+\(\mathcal{R}\) similarly describes the reward generated by the environment
+\(r(S) \rightarrow \mathbb{R}\).
+More specifically, we use the notation of \(\gamma\) to describe the discount factor and
+\(s^{t=0}\) as the initial state, which follows the distribution of starting states \(p_0(s^{t=0})\).
+The expected total reward is the objective function for the agent to optimize, which is
+\begin{equation}\label{equation:objective}
+    \eta(\pi) = \mathbb{E}_{s^{t=0}}\left[\sum_{t=0}^{T=\infty}\gamma^t r(s_t)\right].
 \end{equation}
-The agent's objective is to find a policy that maximizes the expected reward in equation~\ref{equation:expected}.
-\begin{equation}\label{equation:expected}
-\theta^i = \arg\max_{\theta^i} \mathbb{E}_{s^i\sim\rho_\theta}\left[r(\phi^i, \pi_{\theta^i}(s^i) | \Psi^t)\right],
+In this paper,
+we use stochastic policy gradient method~\cite{sutton2000}.
+The stochastic policy gradient are formulated as follow:
+\begin{equation}\label{spg}
+\begin{aligned}
+ \nabla_\theta\mathcal{J}(\pi) =
+    \mathbb{E}_{s^t=0\sim p_0(s^{t=0}),\,a\sim\pi} \left[\nabla_\theta\log\pi(a^t|s^t) Q_\pi(s^t, a^t)\right],
+    \end{aligned}
 \end{equation}
-while the untrustworthy agent will try to maximize its reward by a slightly different objective function.
-\begin{equation}\label{equation:untrust_expected}
-\theta^i,\omega^i = \arg\max_{\theta^i,\omega^i}\mathbb{E}_{s^i\sim\rho_\theta}\left[r(\phi^i, \pi_{\theta^i}(s^i) | \Psi^t)\right], \mbox{ where }\,\psi^i_t = I_{\omega^i}(s^i_t)
+where \(Q_\pi(s^t, a^t)\) is the state-action value.
+\subsection{Social Dilemmas}
+The framework of this paper is limited in social dilemmas in repeated general-sum games,
+which is a generalization of repeated general-sum matrix games.
+
+One of the most classic example is Prisoner's Dilemma.
+An agent could choose to cooperate or defect.
+Following the notation from~\cite{macy2002learning, leibo2017multi},
+the four possible outcomes are $R$ (reward of mutual cooperation),
+$P$ (punishment arising from mutual defection),
+$S$ (sucker outcome obtained by the player who cooperates with a defecting partner),
+and $T$ (temptation outcome achieved by defecting against a cooperator).
+
+And social dilemma in our paper is the case when the outcomes of the game
+satisfy the following \emph{social dilemma inequalities} from \cite{macy2002learning}.
+$R > P$; mutual cooperation is preferred to mutual defection.
+$R > S$; mutual cooperation is preferred to being exploited by a defector.
+$2R > T + S$;
+mutual cooperation is preferred to an equal probability of unilateral cooperation and defection.
+And either $T > R$; exploiting a cooperator is preferred over mutual cooperation,
+or $P > S$; mutual defection is preferred over being exploited.
+
+\section{Models and Algorithm}
+
+% There are two modules in our model: the reward-assigner and the agents.
+% The agents optimize its reward by interacting with the environment, namely the reward-assigner,
+% while the reward-assigner is trying to increasing the total utility of the system by
+% guiding the agents' behavior with a reward function.
+
+\subsection{Formulation of Agents}
+In this paper, we formulate several types of agent:
+\paragraph{Naive Agents}
+Naive agents always try to optimize the total reward of both agents, i.e., the objective function for naive agents is
+\begin{equation}\label{equation:naive_objective}
+    \eta_N(\pi) =
+    \mathbb{E}_{s^{t=0}}\left[\sum_{t=0}^{T=\infty}\gamma^t \left(r_N(s_t) + r_O(s_t)\right)\right],
 \end{equation}
-where \(\rho_\theta\) is the static state distribution of the agent \(i\)
-given the current policy parameters of all agents in the system.
+where \(r_N(s_t),\, r_O(s_t)\) are respectively the reward of the naive agent and its opponents.
+\paragraph{Selfish Agents}
+Selfish agents are truely rational agents.
+These agents only optimizing the total reward for itself,
+and therefore they are always looking for dominant strategy.
+Ideally, they might converge to Nash equilibrium if there exists one.
+We denote the reward for selfish agent as \(r_S(s_t)\), and therefore
+\begin{equation}\label{equation:self_objective}
+    \eta_S(\pi) =
+    \mathbb{E}_{s^{t=0}}\left[\sum_{t=0}^{T=\infty}\gamma^t r_S(s_t)\right].
+\end{equation}
+\paragraph{Adaptive Agents}
+Dynamically adapting its behavior so that the total number of cooperation is maximized.
+One of the classic Adaptive agent is TFT Agents~\cite{nowak1993strategy}.
+An ideal adaptive agent will first cooperate,
+then subsequently replicate the opponent's previous action.
+\subsection{CMAR Agents}
+
+\section{Experiments}
+\subsection{Environment Design}
 
 \bibliography{project}
 \bibliographystyle{plain}

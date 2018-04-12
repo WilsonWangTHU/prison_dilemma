@@ -51,8 +51,7 @@
   }
 \else
   \newcommand{\@noticestring}{%
-    Submitted to \@nipsordinal\/ Conference on Neural Information
-    Processing Systems (NIPS \@nipsyear). Do not distribute.%
+     CSC2556 Spring 18, Algorithms for Collective Decision Making
   }
 
   % line numbers for submission
@@ -299,12 +298,15 @@
       }
       \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}\@author\end{tabular}%
     \else
-      \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}
-        Anonymous Author(s) \\
-        Affiliation \\
-        Address \\
-        \texttt{email} \\
-      \end{tabular}%
+      \def\And{%
+        \end{tabular}\hfil\linebreak[0]\hfil%
+        \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}\ignorespaces%
+      }
+      \def\AND{%
+        \end{tabular}\hfil\linebreak[4]\hfil%
+        \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}\ignorespaces%
+      }
+      \begin{tabular}[t]{c}\bf\rule{\z@}{24\p@}\@author\end{tabular}%
     \fi
     \vskip 0.3in \@minus 0.1in
   }
