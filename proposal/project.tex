@@ -34,20 +34,19 @@
 \maketitle
 \begin{abstract}
 Most Reinforcement Learning (RL) systems have a single-agent's view,
-where the agent tries to optimize its' expected discounted reward,
+where the agent tries to optimize its' expected discounted total reward,
     and the other agents in the environment is treated as part of the environment.
 However, multi-agent assumption is crucial for building artificial intelligence,
 since interactions, and more importantly,
 competitions between different agents are very common in real-world applications.
 Individuals have the temptation to increase payoffs, which at the same time
-might indanger the total welfare. %
-Recently cooperations in social dilemmas of multi-agent in RL are considered.
+might endanger the total welfare. %
+Recently cooperations in social dilemmas of multi-agent are receiving more attention.
 Traditionally, the convergence and asymptotic behaviors of two players
 in a general sum games have been intensively studied.
 However, most of the studies have been focused on simple general sum matrix games,
-where the dynamics of the environment is known or very simple,
-and opponents' intrinsic goals are easy to infer from their behaviors.
-In reality, agents might take multiple timesteps before a reward signal is given
+where the dynamics of the environment is known or easy to model.
+In reality, agents might take multiple time-steps before a reward signal is given
 in an environment with complex dynamics,
 and opponents' strategies are hard to interpret.
 In this paper, we empirically study the computational behaviors of agents during learning,
@@ -79,22 +78,22 @@ Typically, a common choice of policies for most agents is Nash equilibrium~\cite
 in which each player has no gain by changing only their own strategy.
 
 However, previous works have not answered the following questions:
-First of all, tasks in real life are arbitary, which means that
+First of all, tasks in real life are arbitrary, which means that
 the dominant strategy or Nash equilibrium might not exist or hard to discover.
 There is also the difficulty of understanding opponent's intrinsic intention.
 In prisoner's dilemma~\cite{nowak1993strategy}, the defecting actions is self-explanatory.
 However in real life, agents need an inference module to model whether the opponent is defecting.
 In most literature, we assume that there is unlimited computation resource for every agent.
-But computationly, to train an agent,
+But computationally, to train an agent,
 the limitation on both the model's capacity and computation power will inevitably affect agents' behaviors.
 And since the dynamics is unknown or hard to model,
-the policy has to be learnt from past experiences, which involves exploration.
+the policy has to be learned from past experiences, which involves exploration.
 Opponent's policy distribution is unstatic,
 which affects and is affected by agent's current policy at the same time.
 
 The contributions of this paper is three-fold\footnote{Code is available in the project page \url{https://github.com/WilsonWangTHU/prison_dilemma}}, 
 \begin{itemize}
-\item We provide emiprical analysis of computational behaviors of different agents.
+\item We provide empirical analysis of computational behaviors of different agents.
 A mixture of trainable agents and agents of pre-defined strategy is tested on general social dilemmas.
 \item We provide benchmarking environments for complex social dilemmas.
 Multiple steps of wide range of choices of actions are needed before the reward is received.
@@ -184,7 +183,7 @@ Naive agents always try to optimize the total reward of both agents, i.e., the o
 \end{equation}
 where \(r_N(s_t),\, r_O(s_t)\) are respectively the reward of the naive agent and its opponents.
 \paragraph{Selfish Agents}
-Selfish agents are truely rational agents.
+Selfish agents are truly rational agents.
 These agents only optimizing the total reward for itself,
 and therefore they are always looking for dominant strategy.
 Ideally, they might converge to Nash equilibrium if there exists one.
@@ -202,7 +201,7 @@ then subsequently replicate the opponent's previous action.
 \caption{Training of CMAR}\label{algo}
 \begin{algorithmic}[1]
 \State \textbf{Input:}
-    \(\theta_R, \theta_C, \theta_I\) respectively the inital weight parameters for retaliation and cooperation policy.
+    \(\theta_R, \theta_C, \theta_I\) respectively the initial weight parameters for retaliation and cooperation policy.
 
 \While{Iteration not finished}
     \State Start one episode of game
@@ -238,20 +237,21 @@ prevents the enemy's use of those same weapons,
 we notice that the threat of retaliation if the opponent is not cooperating will
 essentially result in full cooperation through the game.
 We build the Cooperative Mutual Assured Retaliation (CMAR) agents,
-by applying the following behavior policy.
+by applying the following Cooperative-Mutual-Assured-Retaliation behavior policy.
 First of all, unlike naive agents,
 CMAR agent maintains two target policies by off-policy learning~\cite{precup2001off}.
 One CMAR agent maintains the cooperation target policy for optimizing total reward of both player,
 and at the same time
 maintains the retaliation policy for optimizing the negative of expected reward of opponent.
-
-Behavior policy for CMAR agent is the Cooperative-Mutual-Assured-Retaliation policy.
 The agent start with cooperating,
 and the agent runs an inference model from the distribution of behavior policy
 of the opponent to classify if the opponent is cooperating.
 If this policy is close to the distribution of CMAR's target cooperation policy,
 CMAR will use cooperative policy.
 Otherwise CMAR will use the retaliation policy.
+To model the inference model, we could either use simple policy matching,
+or we could use a GAN~\cite{goodfellow2014generative},
+where we treat the CMAR's policy as postive and the opponents' policy as negative.
 
 \begin{theorem}\label{t1}
     In General Cooperation Game with Interruption (GCGI)~\ref{appd1},
@@ -259,7 +259,7 @@ Otherwise CMAR will use the retaliation policy.
     the best policy for selfish opponent is cooperation.
 \end{theorem}
 The Proof for Theorem~\ref{t1} is listed in appendix~\ref{appt1}.
-Note that we define GCGI,
+Note that we define GCGI in the appendix~\ref{appd1},
 and most of games satisfy this constraints and could be regarded as GCGI,
 
 \begin{theorem}\label{t2}
@@ -271,12 +271,14 @@ The algorithm of CMAR is shown in the~\ref{algo}
 \section{Experiments}
 \subsection{Environment Design}
 We design two environments to test the performance.
-In the Iterative Prisoner's Dilemma (IPD), multiple timestep of prisoner's dilemma is played.
+In the Iterative Prisoner's Dilemma (IPD), multiple time-step of prisoner's dilemma is played.
 In the Hunting Maze Dilemma (HMD), two hunters are put in a maze.
 Similar to the prisoner's dilemma, two hunter could hunt their own assigned prey, which is essentially cooperation.
-There is another additional prey (AddPrey) that has higher value.
-If one of the hunter hunts the AddPrey, it will interrupt the other agents' hunting and hurt the total utility of both hunters.
-If both of the hunters hunt the AddPrey, then both of them will get zero reward because the AddPrey will flee.
+There is another additional prey (A-Prey) that has higher value.
+If one of the hunter hunts the A-Prey,
+it will interrupt the other agents' hunting and hurt the total utility of hunters.
+If both of the hunters hunt the A-Prey,
+then both of them will get zero reward because the A-Prey will flee.
 \begin{figure}
 \begin{subfigure}{.24\textwidth}
 \centering
@@ -305,12 +307,12 @@ If both of the hunters hunt the AddPrey, then both of them will get zero reward 
 \subsection{Results}
 In figure~\ref{fig:selfish},
 we show the results of the case where a selfish agent competes against another selfish agent
-and the case where a selfish agent is competing against.
-Clearly from the figure, we know that when selfish agent competes with a naive agent,
-the total utility of the naive agent drop quickly,
+and the case where selfish agents are competing against naive agents.
+Clearly from the figure, we know that when a selfish agent competes with a naive agent,
+the total utility of the naive agent drops quickly,
 since the naive agent will always choose to cooperate.
 The selfish agents learn gradually to increase the number of defecting,
-and learn to always defect in the end.
+and always chooses to defect in the end.
 One interesting result is from sub-figure (c) and (d),
 when the game is played between two selfish agents.
 Although both players are trying to optimize their own reward,
@@ -332,7 +334,7 @@ we study the computational behaviors under the more challenging Hunting Maze tas
 From the figure,
 we verify that CMAR agents are still able to maintain cooperation in complex environment.
 Similar to the Iterative Prisoner's Dilemma,
-the CMAR agents is able to maintain cooperation with theirselves as well as selfish agents.
+the CMAR agents is able to maintain cooperation with themselves as well as selfish agents.
 While at the same time, selfish agents will end up with defecting each other in the end.
 \begin{figure}
 \begin{subfigure}{.33\textwidth}
@@ -366,7 +368,7 @@ While at the same time, selfish agents will end up with defecting each other in 
 \includegraphics[width=1\linewidth]{figure/as_reward.pdf}
 (f)
 \end{subfigure}
-    \caption{The action distribution and reward of CMAR agents against themselves (sub-figure (a), (d)) and CMAR agents against naive agents (sub-figure (b), (e)) and selfish agents against selfish agents (sub-figure (c), (f)) during training.}
+    \caption{The action distribution and reward of CMAR agents against themselves (sub-figure (a), (d)) and CMAR agents against naive agents (sub-figure (b), (e)) and CMAR agents against selfish agents (sub-figure (c), (f)) during training.}
 \label{fig:cmar}
 \end{figure}
 
@@ -389,27 +391,29 @@ While at the same time, selfish agents will end up with defecting each other in 
     \caption{
 The reward of CMAR agents against themselves (sub-figure (a)),
 selfish agents against themselves (sub-figure (b)),
-    and selfish agents against CMAR agents during training.}
+    and selfish agents against CMAR agents during training in the maze environment.}
 \label{fig:maze}
 \end{figure}
 \section{Conclusion}
 In this paper, we empirically show the computational behaviors of agents during learning.
 The proposed CMAR agent is able to maintain cooperation in complex social dilemmas.
-Future works might involve more complex modelling of the inference model on the opponent,
+Future works might involve more complex modeling of the inference model on the opponent,
 and test the algorithm under even more complex settings.
 \bibliography{project}
 \bibliographystyle{plain}
+\newpage
 \appendix
 \section{Proof of CMAR Agents' Property}
 \subsection{Definition of GCGI}
 \begin{definition}\label{appd1}
 We name the following game \emph{General Cooperation Game with Interruption (GCGI)}.
-In the GCGI game, only one game output is produeced in the end.
+In the GCGI game, the game output is dependent on all the steps through the game,
+    and the length of the game is not known by the agents in advance.
     To defect,
     at least \(M>1\) steps of malicious behavior is needed before the game output is produced,
-    and the other agent could switch to defecting policy within \(M - 1\) timesteps,
+    and the other agent could switch to defecting policy within \(M - 1\) time-steps,
 \end{definition}
-Most of games satisfy this constraints and could be regarded as GCGI,
+Most of games satisfy the GCGI constraints,
 which includes the two environment studied in this paper.
 
 \subsection{Proof of Theorem~\ref{t1}}\label{appt1}
@@ -419,26 +423,26 @@ which includes the two environment studied in this paper.
 \textbf{Proof}:
 Without loss of generality,
 we assume that for the selfish agent
-one arbitary possible segment of path of length \(T\) in the game is denoted as \(\tau^T\).
-We show by contradiction that this \(\tau^T\) will not result in a game
+one arbitrary possible segment of path of length \(T\) in the game is denoted as \(\tau^T\).
+We show by contradiction that this \(\tau^T\) is not the result of a game
 where CMAR cooperates and selfish agent defects.
 
 \begin{itemize}
 \item \textbf{Case One}:
-Assume that at timestep \(k<T-1\), the selfish choose to defect, then at timestep \(k + 1\),
+Assume that at time-step \(k<T-1\), the selfish choose to defect, then at time-step \(k + 1\),
 the CMAR agent will choose to defect.
 Therefore the it is not the case where CMAR cooperates and selfish agent defects.
 
 \item \textbf{Case Two}:
-Now assume that at timestep \(k=T-1\), the selfish choose to defect,
-and the selfish agent has already choose to defect in a earlier timestep \(k' < k\).
-Then looking at timestep \(k'\), we know that again that the CMAR agent will choose to defect.
+Now assume that at time-step \(k=T-1\), the selfish choose to defect,
+and the selfish agent has already chosen to defect in a earlier time-step \(k' < k\).
+Then looking at time-step \(k'\), we know that again that the CMAR agent will choose to defect.
 
 \item \textbf{Case Three}:
-Now assume that at timestep \(k=T-1\), the selfish choose to defect,
-and the selfish agent has not choose to defect in a earlier timestep \(\forall k' < k\).
+Now assume that at time-step \(k=T-1\), the selfish choose to defect,
+and the selfish agent has not chosen to defect in a earlier time-step \(\forall k' < k\).
 Since at least \(M>1\) steps of malicious behavior is needed,
-the selfish agent is not ale to accumulate enough steps to defect.
+the selfish agent is not able to accumulate enough steps to defect.
 \end{itemize}
 Thus we proof the Theorem~\ref{t1}
 \subsection{Proof of Theorem~\ref{t2}}\label{appt2}
@@ -447,12 +451,12 @@ therefore CMAR's cooperation target policy and retaliation policy will both conv
 \subsection{Miscellaneous Results}
 \begin{figure}[!h]
     \centering
-\begin{subfigure}{.48\textwidth}
+\begin{subfigure}{.45\textwidth}
 \centering
 \includegraphics[width=1\linewidth]{figure/SP_0001reward.pdf}
 (a)
 \end{subfigure}
-\begin{subfigure}{.48\textwidth}
+\begin{subfigure}{.45\textwidth}
 \centering
 \includegraphics[width=1\linewidth]{figure/SP_0001action.pdf}
 (b)
@@ -463,28 +467,28 @@ therefore CMAR's cooperation target policy and retaliation policy will both conv
 
 \begin{figure}
     \centering
-\begin{subfigure}{.48\textwidth}
+\begin{subfigure}{.45\textwidth}
 \centering
 \includegraphics[width=1\linewidth]{figure/ss_lr_00001reward.pdf}
 (a)
 \end{subfigure}
-\begin{subfigure}{.48\textwidth}
+\begin{subfigure}{.45\textwidth}
 \centering
 \includegraphics[width=1\linewidth]{figure/ss_lr_00001action.pdf}
 (b)
 \end{subfigure}
-    \caption{The reward and action distribution of selfish agents against selfish agents with smaller learning rate (0.0001). Smaller learning might result in the agents unability of mastering the dominant strategy.}
+    \caption{The reward and action distribution of selfish agents against selfish agents with smaller learning rate (0.0001). Smaller learning might result in the agents inability of mastering the dominant strategy.}
 \label{fig:misc-SS}
 \end{figure}
 
 \begin{figure}
 \centering
-\begin{subfigure}{.48\textwidth}
+\begin{subfigure}{.45\textwidth}
 \centering
 \includegraphics[width=1\linewidth]{figure/ss_lr_001reward.pdf}
 (a)
 \end{subfigure}
-\begin{subfigure}{.48\textwidth}
+\begin{subfigure}{.45\textwidth}
 \centering
 \includegraphics[width=1\linewidth]{figure/ss_lr_001action.pdf}
 (b)
@@ -495,12 +499,12 @@ therefore CMAR's cooperation target policy and retaliation policy will both conv
 
 \begin{figure}
 \centering
-\begin{subfigure}{.48\textwidth}
+\begin{subfigure}{.45\textwidth}
 \centering
 \includegraphics[width=1\linewidth]{figure/ANlr001_action.pdf}
 (a)
 \end{subfigure}
-\begin{subfigure}{.48\textwidth}
+\begin{subfigure}{.45\textwidth}
 \centering
 \includegraphics[width=1\linewidth]{figure/ANlr001_action.pdf}
 (b)
